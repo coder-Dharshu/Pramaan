@@ -1,0 +1,16 @@
+{
+  "name": "PRAMAAN — Justice Within Reach",
+  "short_name": "PRAMAAN",
+  "description": "AI-powered free legal access for every Indian citizen",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0D14",
+  "theme_color": "#F97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/hero-image.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/hero-image.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["legal", "utilities"],
+  "lang": "en-IN"
+}

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F97316" />
+  <meta name="description" content="PRAMAAN — AI-powered free legal access for every Indian citizen" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="PRAMAAN" />
+  <title>PRAMAAN — Justice Within Reach</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/hero-image.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- CAMERA MODAL -->
+<div id="cameraModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.95);flex-direction:column;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:500px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="color:#fff;font-size:18px;font-weight:700">📷 Capture Document</h3>
+      <button onclick="closeCamera()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px">✕ Close</button>
+    </div>
+    <video id="cameraFeed" autoplay playsinline style="width:100%;border-radius:12px;background:#000;max-height:400px;object-fit:cover"></video>
+    <canvas id="cameraCanvas" style="display:none"></canvas>
+    <div style="display:flex;gap:12px;margin-top:16px">
+      <button onclick="capturePhoto()" style="flex:1;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer">📸 Capture</button>
+      <button onclick="switchCamera()" style="background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:10px;padding:14px;font-size:20px;cursor:pointer">🔄</button>
+    </div>
+    <div id="capturePreview" style="display:none;margin-top:16px">
+      <img id="capturedImg" style="width:100%;border-radius:12px;max-height:300px;object-fit:contain" />
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button onclick="useCapture()" style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">✅ Use This Photo</button>
+        <button onclick="retakePhoto()" style="flex:1;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer">🔄 Retake</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO RECORD MODAL -->
+<div id="audioModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:420px;padding:24px;background:var(--bg3);border-radius:20px;margin:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="font-size:18px;font-weight:700">🎙️ Record Evidence Audio</h3>
+      <button onclick="closeAudioModal()" style="background:var(--bg4);border:none;color:var(--text);border-radius:8px;padding:8px 12px;cursor:pointer">✕</button>
+    </div>
+    <div style="text-align:center;padding:10px 0">
+      <div id="audioVisualizer" style="width:100%;height:60px;background:var(--bg4);border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:4px;overflow:hidden;padding:8px"></div>
+      <div id="audioTimer" style="font-size:36px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;margin-bottom:6px">0:00</div>
+      <div id="audioStatus" style="font-size:13px;color:var(--text3);margin-bottom:24px">Tap record to start</div>
+      <button id="audioRecBtn" onclick="toggleAudioRecord()" style="background:var(--orange);color:#fff;border:none;border-radius:50%;width:72px;height:72px;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,0.4)">🎙️</button>
+      <div id="audioActions" style="display:none;margin-top:20px;gap:10px;flex-direction:column">
+        <button onclick="uploadAudioEvidence()" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;width:100%">✅ Use Recording</button>
+        <button onclick="discardAudio()" style="background:var(--bg4);color:var(--text);border:none;border-radius:10px;padding:12px;cursor:pointer;width:100%">🗑️ Discard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-in">
+    <a class="logo" onclick="go('home')">
+      <div class="logo-box">⚖️</div>
+      <span class="logo-txt">PRAMAAN</span>
+    </a>
+    <ul class="nav-links">
+      <li><a onclick="go('home')" id="nl-home" class="act">Home</a></li>
+      <li><a onclick="go('casebuilder')" id="nl-casebuilder">Case Builder</a></li>
+      <li><a onclick="go('dashboard')" id="nl-dashboard">Dashboard</a></li>
+      <li><a onclick="go('lawyers')" id="nl-lawyers">Find Lawyers</a></li>
+    </ul>
+    <div class="nav-r">
+      <button class="th-btn" onclick="toggleTheme()" id="thBtn">🌙</button>
+      <button class="btn-or" onclick="go('casebuilder')">Get Started</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div class="page active" id="home">
+  <section class="hero">
+    <div class="su">
+      <div class="hero-badge"><span class="badge-dot"></span>AI-Powered Legal Access</div>
+      <h1>Justice Made <span class="or">Accessible.</span><br>Your Voice. Your<br>Evidence. <span class="or">Your Rights.</span></h1>
+      <p class="hero-sub">PRAMAAN transforms your legal problem into a structured, court-ready case and connects you with the right lawyer — completely free.</p>
+      <div class="hero-btns">
+        <button class="btn-p" onclick="go('casebuilder')">🎤 Start with Voice</button>
+        <button class="btn-ol" onclick="go('casebuilder')">💬 Start with Chat</button>
+        <button class="btn-gh" onclick="go('casebuilder')">⬆️ Upload Evidence</button>
+      </div>
+    </div>
+    <div class="hero-vis su2">
+      <div class="hero-img-card">
+        <img src="/hero-image.png" alt="PRAMAAN Legal AI" />
+      </div>
+    </div>
+  </section>
+
+  <div class="sec">
+    <div class="sec-hd">
+      <h2>How <span class="or">PRAMAAN</span> Works</h2>
+      <p>Three simple steps from problem to resolution</p>
+    </div>
+    <div class="steps-g">
+      <div class="step-c su1"><div class="step-n">01</div><div class="step-ico">🎤</div><h3>Describe Your Problem</h3><p>Voice or chat-based guided intake. Speak naturally in your language — our AI understands you.</p></div>
+      <div class="step-c su2"><div class="step-n">02</div><div class="step-ico">🧠</div><h3>AI Builds Your Case</h3><p>Structures your evidence, retrieves applicable laws, and finds similar past cases automatically.</p></div>
+      <div class="step-c su3"><div class="step-n">03</div><div class="step-ico">👤</div><h3>Lawyer Handoff</h3><p>Generates a complete PDF dossier and connects you to a matched legal aid lawyer instantly.</p></div>
+    </div>
+    <div class="sec-hd" style="margin-top:80px">
+      <h2>Why Choose <span class="or">PRAMAAN</span></h2>
+      <p>Built for every Indian — from villages to cities</p>
+    </div>
+    <div class="feat-g">
+      <div class="feat-c su1"><div class="feat-ico">✅</div><h3>Verified Laws Only</h3><p>AI retrieves real Indian law sections — IPC, CPC, Consumer Protection Act and more.</p></div>
+      <div class="feat-c su2"><div class="feat-ico">🌐</div><h3>10+ Indian Languages</h3><p>Speak in Hindi, Kannada, Tamil, Telugu and more. Pramaan understands you natively.</p></div>
+      <div class="feat-c su3"><div class="feat-ico">📄</div><h3>Court-Ready PDF</h3><p>Auto-generates RTI applications, consumer complaints, legal notices as formatted PDFs.</p></div>
+      <div class="feat-c su1"><div class="feat-ico">🆓</div><h3>Free Forever</h3><p>Zero cost for citizens. Justice should never be gated behind a paywall.</p></div>
+      <div class="feat-c su2"><div class="feat-ico">🔒</div><h3>100% Private</h3><p>End-to-end encrypted. Your legal matters stay yours. DPDP Act compliant.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- CASE BUILDER -->
+<div class="page" id="casebuilder">
+  <div class="bld-wrap">
+    <div class="stepper">
+      <div class="st-item"><div class="st-circle act" id="sc1">1</div><span class="st-lbl act" id="sl1">Describe Issue</span></div>
+      <div class="st-line" id="sln1"></div>
+      <div class="st-item"><div class="st-circle pend" id="sc2">2</div><span class="st-lbl pend" id="sl2">Upload Evidence</span></div>
+      <div class="st-line" id="sln2"></div>
+      <div class="st-item"><div class="st-circle pend" id="sc3">3</div><span class="st-lbl pend" id="sl3">Case Analysis</span></div>
+    </div>
+
+    <!-- Step 1 -->
+    <div id="bs1">
+      <div class="bld-card fade-in">
+        <div class="bld-hd">
+          <h2>AI Case Builder</h2>
+        </div>
+        <div class="tog">
+          <button class="tog-btn" onclick="togMode('voice',this)">🎤 Voice</button>
+          <button class="tog-btn act" onclick="togMode('chat',this)">💬 Chat</button>
+        </div>
+        <div class="prog-w">
+          <div class="prog-lbl"><span>Case Intake Progress</span><span id="pp">8%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="pf" style="width:8%"></div></div>
+        </div>
+        <div class="chat-area" id="chatArea">
+          <div class="msg-ai">Namaste 🙏 I'm PRAMAAN, your free legal assistant.<br><br>Just tell me what's happening in your own words — no legal language needed. You can type or speak in any Indian language.</div>
+        </div>
+        <div id="factsPanel" class="facts-panel" style="display:none"></div>
+        <div class="chat-inp-w" id="textInputRow">
+          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Click to speak">🎤</button>
+          <input class="chat-inp" id="ci" placeholder="Describe your problem in your own words…" />
+          <button class="send-b" id="sendBtn" onclick="sendMsg()">✈️</button>
+        </div>
+        <div class="voice-hint" id="voiceInputRow" style="display:none">
+          <button class="voice-big-btn" id="voiceBigBtn" onclick="toggleVoice()">
+            <span class="mic-icon">🎤</span>
+            <span class="mic-label">Tap to speak</span><span class="mic-sub">English supported</span>
+          </button>
+        </div>
+      </div>
+      <div class="nxt-wrap"><button class="btn-nxt" onclick="gotoStep(2)">Next: Upload Evidence →</button></div>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="bs2" style="display:none">
+      <div class="bld-card fade-in">
+        <div class="bld-hd"><h2>Upload Evidence</h2></div>
+        <p style="padding:0 24px 16px;font-size:14px;color:var(--text2)">Add documents, images, and audio to strengthen your case</p>
+        <div class="dropzone" id="dropzone" onclick="addFile()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <div class="dz-ico">⬆️</div>
+          <h3>Drag &amp; drop files here</h3>
+          <p>or click to browse • PDF, Images, Audio supported</p>
+        </div>
+        <div class="cap-btns">
+          <button class="cap-btn" onclick="openCamera()">📷 Capture with Camera</button>
+          <button class="cap-btn" onclick="openAudioModal()">🎙️ Record Audio Evidence</button>
+        </div>
+        <div class="up-sec">
+          <div class="up-lbl">UPLOADED FILES</div>
+          <div id="extraFiles">
+            <div id="noFilesMsg" style="padding:12px 0;font-size:13px;color:var(--text3)">No files uploaded yet. Add documents above.</div>
+          </div>
+        </div>
+        <div class="ocr-p" id="ocrPreviewBox" style="display:none">
+          <h4>OCR Preview</h4>
+          <p id="ocrPreviewText"></p>
+        </div>
+        <div class="chklist">
+          <div class="ck-hd">EVIDENCE CHECKLIST</div>
+          <div class="ck-item"><div class="ck-circ pend" id="ck-identity-circ"></div><span id="ck-identity-lbl" style="color:var(--text3)">Identity Proof</span></div>
+          <div class="ck-item"><div class="ck-circ pend" id="ck-incident-circ"></div><span id="ck-incident-lbl" style="color:var(--text3)">Incident Evidence</span></div>
+          <div class="ck-item"><div class="ck-circ pend" id="ck-supporting-circ"></div><span id="ck-supporting-lbl" style="color:var(--text3)">Supporting Documents</span></div>
+          <div class="ck-item"><div class="ck-circ pend" id="ck-witness-circ"></div><span id="ck-witness-lbl" style="color:var(--text3)">Witness Information</span></div>
+          <div class="compl">
+            <div class="compl-row"><span>Evidence Completeness</span><span id="evPp">0%</span></div>
+            <div class="prog-track"><div class="prog-fill" id="evPf" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-bk" onclick="gotoStep(1)">← Back to Chat</button>
+        <button class="btn-nxt" onclick="gotoStep(3)">Next: Case Analysis →</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="bs3" style="display:none">
+      <h2 style="font-size:24px;font-weight:800;margin-bottom:8px">Case Analysis</h2>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:24px">AI-analyzed laws, similar cases, and strategy recommendations</p>
+      <div id="analysisLoading" style="text-align:center;padding:60px 20px">
+        <div style="font-size:48px;margin-bottom:16px">⚖️</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)">Analyzing your case...</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Searching for relevant laws and precedents</div>
+        <div class="typ" style="display:inline-flex"><span></span><span></span><span></span></div>
+      </div>
+      <div id="analysisContent" style="display:none">
+        <div class="an-card fade-in">
+          <div class="an-hd" onclick="togAn('laws')"><div class="an-ico">⚖️</div><h3>Relevant Laws &amp; Sections</h3><span class="cnt-b" id="lawsCount">0</span><span class="chev op" id="ch-laws">▲</span></div>
+          <div class="an-body" id="ab-laws"></div>
+        </div>
+        <div class="an-card">
+          <div class="an-hd" onclick="togAn('cases')"><div class="an-ico">💼</div><h3>Similar Previous Cases</h3><span class="cnt-b" id="casesCount">0</span><span class="chev" id="ch-cases">▼</span></div>
+          <div class="an-body" id="ab-cases" style="display:none"></div>
+        </div>
+        <div class="an-card">
+          <div class="an-hd" onclick="togAn('strat')"><div class="an-ico">🎯</div><h3>Case Strategy Builder</h3><span class="chev" id="ch-strat">▼</span></div>
+          <div class="an-body" id="ab-strat" style="display:none">
+            <p id="strategyText" style="font-size:14px;color:var(--text2);line-height:1.7;padding:8px 0"></p>
+            <div id="caseDraftArea" style="display:none;margin-top:16px"></div>
+          </div>
+        </div>
+      </div>
+      <div id="analysisError" style="display:none;text-align:center;padding:40px 20px">
+        <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--text)">Could not load analysis</div>
+        <div id="analysisErrorMsg" style="font-size:13px;color:var(--text3);margin-bottom:20px"></div>
+        <button class="btn-nxt" style="display:inline-block;width:auto;padding:12px 24px" onclick="loadAnalysis()">↺ Retry</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-bk" onclick="gotoStep(2)">← Back to Evidence</button>
+        <button class="btn-nxt" id="genDossierBtn" onclick="genDossier(event)" disabled style="opacity:0.5">📋 Generate Pramaan Dossier</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="dashboard">
+  <div class="db-wrap">
+    <div class="db-hd">
+      <div><h1>My Dashboard</h1><p>Track your cases and connected lawyers</p></div>
+      <button class="btn-or" style="padding:12px 20px;border-radius:10px;font-size:14px" onclick="go('casebuilder')">New Case →</button>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn act" onclick="switchTab(this,'tc1')">My Cases</button>
+      <button class="tab-btn" onclick="switchTab(this,'tc2')">Drafts</button>
+      <button class="tab-btn" onclick="switchTab(this,'tc3')">Connected Lawyers</button>
+      <button class="tab-btn" onclick="switchTab(this,'tc4')">Notifications <span class="nb"></span></button>
+    </div>
+    <div id="tc1" class="case-list">
+      <div style="text-align:center;padding:60px 0;color:var(--text3)">
+        <div style="font-size:48px;margin-bottom:16px">📁</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px">No cases yet</div>
+        <div style="font-size:14px;margin-bottom:24px">Start by describing your legal problem</div>
+        <button class="btn-or" onclick="go('casebuilder')" style="padding:12px 24px;border-radius:10px">+ Start New Case</button>
+      </div>
+    </div>
+    <div id="tc2" style="display:none;text-align:center;padding:60px 0;color:var(--text3)"><div style="font-size:48px;margin-bottom:16px">📝</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">No drafts yet</div></div>
+    <div id="tc3" style="display:none;flex-direction:column;gap:12px"><div style="text-align:center;padding:60px 0;color:var(--text3)"><div style="font-size:48px;margin-bottom:16px">⚖️</div><div style="font-size:16px;font-weight:600">No lawyers connected yet</div></div></div>
+    <div id="tc4" style="display:none;flex-direction:column;gap:12px"><div style="text-align:center;padding:60px 0;color:var(--text3)"><div style="font-size:48px;margin-bottom:16px">🔔</div><div style="font-size:16px;font-weight:600">No notifications yet</div></div></div>
+  </div>
+</div>
+
+<!-- LAWYERS -->
+<div class="page" id="lawyers">
+  <div class="lw-wrap">
+    <div class="lw-hd"><h1>Find Legal Aid Lawyers</h1><p>AI-matched lawyers based on your case type and location</p></div>
+    <div class="lw-grid">
+      <div class="lw-card su1"><div class="lw-av">👤</div><div class="lw-nm">Adv. Priya Sharma</div><div class="lw-sp">Property Law</div><div class="lw-mt"><span>📍 New Delhi</span><span>⭐ 4.8</span></div><div class="lw-stats"><span class="lw-c">142 cases handled</span><span class="av-y">Available</span></div><button class="conn-btn" onclick="connectToLawyer(this,'Adv. Priya Sharma')">💬 Connect Now</button></div>
+      <div class="lw-card su2"><div class="lw-av">👤</div><div class="lw-nm">Adv. Rahul Mehta</div><div class="lw-sp">Employment Law</div><div class="lw-mt"><span>📍 Mumbai</span><span>⭐ 4.6</span></div><div class="lw-stats"><span class="lw-c">98 cases handled</span><span class="av-y">Available</span></div><button class="conn-btn" onclick="connectToLawyer(this,'Adv. Rahul Mehta')">💬 Connect Now</button></div>
+      <div class="lw-card su3"><div class="lw-av">👤</div><div class="lw-nm">Adv. Sunita Reddy</div><div class="lw-sp">Consumer Protection</div><div class="lw-mt"><span>📍 Hyderabad</span><span>⭐ 4.9</span></div><div class="lw-stats"><span class="lw-c">210 cases handled</span><span class="av-n">Busy</span></div><button class="conn-btn off">💬 Unavailable</button></div>
+      <div class="lw-card su1"><div class="lw-av">👤</div><div class="lw-nm">Adv. Karthik Iyer</div><div class="lw-sp">Family Law</div><div class="lw-mt"><span>📍 Chennai</span><span>⭐ 4.7</span></div><div class="lw-stats"><span class="lw-c">175 cases handled</span><span class="av-y">Available</span></div><button class="conn-btn" onclick="connectToLawyer(this,'Adv. Karthik Iyer')">💬 Connect Now</button></div>
+      <div class="lw-card su2"><div class="lw-av">👤</div><div class="lw-nm">Adv. Amar Singh</div><div class="lw-sp">Criminal Law</div><div class="lw-mt"><span>📍 Jaipur</span><span>⭐ 4.5</span></div><div class="lw-stats"><span class="lw-c">120 cases handled</span><span class="av-y">Available</span></div><button class="conn-btn" onclick="connectToLawyer(this,'Adv. Amar Singh')">💬 Connect Now</button></div>
+      <div class="lw-card su3"><div class="lw-av">👤</div><div class="lw-nm">Adv. Meera Patel</div><div class="lw-sp">Civil Litigation</div><div class="lw-mt"><span>📍 Ahmedabad</span><span>⭐ 4.8</span></div><div class="lw-stats"><span class="lw-c">156 cases handled</span><span class="av-y">Available</span></div><button class="conn-btn" onclick="connectToLawyer(this,'Adv. Meera Patel')">💬 Connect Now</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRAMAAN — 8-Agent AI Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080b10;
+  --bg2:      #0d1117;
+  --bg3:      #111820;
+  --surface:  #141b24;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.12);
+  --text:     #e8edf3;
+  --text2:    #8899aa;
+  --text3:    #4d6070;
+  --orange:   #f97316;
+  --orange2:  #fb923c;
+  --cyan:     #22d3ee;
+  --green:    #34d399;
+  --purple:   #a78bfa;
+  --yellow:   #fbbf24;
+  --red:      #f87171;
+  --blue:     #60a5fa;
+}
+
+html { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; }
+body { min-height: 100vh; overflow-x: hidden; }
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ── Grid lines background ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* ── HEADER ── */
+.header { text-align: center; margin-bottom: 64px; }
+.header-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--orange); background: rgba(249,115,22,.1);
+  border: 1px solid rgba(249,115,22,.25); border-radius: 20px;
+  padding: 5px 14px; margin-bottom: 20px;
+}
+.header-eyebrow::before { content: ''; width:6px; height:6px; border-radius:50%; background:var(--orange); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
+
+h1 {
+  font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; letter-spacing: -.03em;
+  background: linear-gradient(135deg, #fff 0%, var(--orange2) 50%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  line-height: 1.1; margin-bottom: 14px;
+}
+.header-sub {
+  font-size: 1rem; color: var(--text2); max-width: 560px; margin: 0 auto;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.7;
+}
+
+/* ── LEGEND ── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center; margin-bottom: 48px;
+}
+.leg { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+.leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ── FLOW LAYOUT ── */
+.flow { display: flex; flex-direction: column; gap: 32px; }
+
+/* ── ROW ── */
+.row {
+  display: flex; align-items: flex-start; gap: 20px;
+  position: relative;
+}
+.row-label {
+  writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--text3); flex-shrink: 0; padding: 8px 0;
+}
+
+/* ── AGENT CARD ── */
+.agent {
+  flex: 1; position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px 20px;
+  cursor: pointer;
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.agent::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--agent-color, var(--orange));
+  opacity: 0; transition: opacity .25s;
+}
+.agent:hover {
+  border-color: var(--border2);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.5);
+}
+.agent:hover::before { opacity: 1; }
+.agent.active {
+  border-color: var(--agent-color, var(--orange)) !important;
+  box-shadow: 0 0 0 1px var(--agent-color), 0 20px 50px rgba(0,0,0,.6) !important;
+}
+.agent.active::before { opacity: 1; }
+
+/* Glow effect behind card */
+.agent::after {
+  content: ''; position: absolute; inset: 0; border-radius: 16px;
+  background: radial-gradient(circle at 50% 0%, var(--agent-color, transparent), transparent 70%);
+  opacity: 0; transition: opacity .3s;
+}
+.agent:hover::after, .agent.active::after { opacity: .06; }
+
+.agent-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; color: var(--agent-color, var(--orange)); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.agent-num::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.agent-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+.agent-name { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: 5px; letter-spacing: -.01em; }
+.agent-role { font-size: .75rem; color: var(--text2); line-height: 1.5; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; }
+
+.agent-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  font-size: 10px; font-family: 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  border-radius: 4px; padding: 3px 8px; color: var(--text3);
+  white-space: nowrap;
+}
+.tag.hot { background: rgba(249,115,22,.1); border-color: rgba(249,115,22,.2); color: var(--orange2); }
+.tag.rag { background: rgba(34,211,238,.1); border-color: rgba(34,211,238,.2); color: var(--cyan); }
+.tag.ai  { background: rgba(167,139,250,.1); border-color: rgba(167,139,250,.2); color: var(--purple); }
+
+/* ── CONNECTOR ARROWS ── */
+.connector {
+  display: flex; align-items: center; justify-content: center;
+  position: relative; padding: 8px 0;
+}
+.arrow-line {
+  width: 2px; height: 32px;
+  background: linear-gradient(to bottom, var(--border2), var(--orange));
+  position: relative; margin: 0 auto;
+}
+.arrow-line::after {
+  content: '▼'; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  color: var(--orange); font-size: 12px;
+}
+.connector-label {
+  position: absolute; right: calc(50% - 80px); top: 50%; transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--orange);
+  background: var(--bg); border: 1px solid rgba(249,115,22,.25); border-radius: 4px;
+  padding: 2px 8px; white-space: nowrap;
+}
+
+/* ── HORIZONTAL FLOW ── */
+.h-flow {
+  display: flex; align-items: center; gap: 0;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 20px;
+  padding: 24px; flex-wrap: nowrap; overflow-x: auto;
+}
+.h-arrow {
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding: 0 8px;
+}
+.h-arrow-line {
+  width: 32px; height: 2px;
+  background: linear-gradient(to right, var(--border2), var(--cyan));
+  position: relative;
+}
+.h-arrow-line::after {
+  content: '▶'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+  color: var(--cyan); font-size: 10px;
+}
+.h-arrow-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3);
+  margin-top: 6px; white-space: nowrap;
+}
+
+.rag-step {
+  flex-shrink: 0; text-align: center; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  min-width: 90px;
+}
+.rag-step-icon  { font-size: 22px; margin-bottom: 6px; }
+.rag-step-label { font-size: 11px; font-weight: 700; color: var(--cyan); font-family: 'JetBrains Mono', monospace; margin-bottom: 3px; }
+.rag-step-desc  { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; line-height: 1.4; }
+
+/* ── RAG SECTION ── */
+.rag-block {
+  background: rgba(34,211,238,.04); border: 1px solid rgba(34,211,238,.15); border-radius: 20px;
+  padding: 28px; margin: 8px 0;
+}
+.rag-title {
+  font-size: .8rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--cyan); font-family: 'JetBrains Mono', monospace;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+}
+.rag-title::before { content: '⬡'; font-size: 16px; }
+.rag-agents { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+/* ── DETAIL PANEL ── */
+.detail-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 360px;
+  background: var(--bg2); border-left: 1px solid var(--border2);
+  padding: 32px 28px; overflow-y: auto; z-index: 100;
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.detail-panel.open { transform: translateX(0); }
+.detail-close {
+  position: absolute; top: 20px; right: 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text2); width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; transition: all .2s;
+}
+.detail-close:hover { color: var(--text); border-color: var(--border2); }
+
+.dp-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .1em; margin-bottom: 8px; }
+.dp-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+.dp-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+.dp-role { font-size: .8rem; color: var(--text2); line-height: 1.6; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; }
+.dp-divider { height: 1px; background: var(--border); margin: 16px 0; }
+.dp-section-title { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+.dp-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.dp-list li { font-size: .8rem; color: var(--text2); font-family: 'JetBrains Mono', monospace; display: flex; gap: 8px; line-height: 1.5; }
+.dp-list li::before { content: '→'; color: var(--agent-color, var(--orange)); flex-shrink: 0; }
+.dp-code { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--cyan); line-height: 1.7; overflow-x: auto; }
+
+/* ── CHAIN BADGE ── */
+.chain {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(249,115,22,.1); border: 1px solid rgba(249,115,22,.25);
+  border-radius: 20px; padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--orange);
+  margin: 8px auto; display: flex; width: fit-content;
+}
+
+/* ── STATS ROW ── */
+.stats {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 48px;
+}
+.stat {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px; text-align: center;
+}
+.stat-num { font-size: 2rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin-bottom: 4px; }
+.stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; }
+
+/* ── SETUP STEPS ── */
+.setup { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 32px; margin-top: 56px; }
+.setup-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+.setup-steps { display: flex; flex-direction: column; gap: 16px; }
+.step { display: flex; gap: 16px; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(249,115,22,.15); border: 1px solid rgba(249,115,22,.3); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--orange); flex-shrink: 0; }
+.step-content { padding-top: 3px; }
+.step-name { font-size: .85rem; font-weight: 600; margin-bottom: 5px; }
+.step-code { font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--cyan); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: inline-block; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .stats { grid-template-columns: repeat(2,1fr); }
+  .rag-agents { grid-template-columns: 1fr; }
+  .h-flow { gap: 0; }
+  .detail-panel { width: 100%; }
+}
+@media (max-width: 600px) {
+  .row { flex-direction: column; }
+  .row-label { writing-mode: horizontal-tb; transform: none; }
+  .stats { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">AI Orchestration Architecture</div>
+    <h1>PRAMAAN<br>8-Agent System</h1>
+    <p class="header-sub">// orchestrated multi-agent pipeline<br>// RAG · pgvector · Groq · Gemini · Supabase</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="stat-num" style="color:var(--orange)">8</div><div class="stat-lbl">AI Agents</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--cyan)">768</div><div class="stat-lbl">Vector Dims</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--green)">25+</div><div class="stat-lbl">Laws Indexed</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--purple)">14+</div><div class="stat-lbl">SC Cases RAG</div></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div>Core Agents</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--cyan)"></div>RAG Pipeline</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Document Gen</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div>Lawyer Match</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--yellow)"></div>Auto-chains</div>
+  </div>
+
+  <div class="flow">
+
+    <!-- ROW 1: Intake + File Upload -->
+    <div class="row">
+      <div class="row-label">INPUT</div>
+      <div class="agent" style="--agent-color:var(--orange)" data-agent="1" onclick="openDetail(1)">
+        <div class="agent-num">A1</div>
+        <span class="agent-icon">🎤</span>
+        <div class="agent-name">IntakeAgent</div>
+        <div class="agent-role">Chat + Voice → Case Profile<br>Slot-filling · never repeats questions</div>
+        <div class="agent-tags">
+          <span class="tag hot">chat_message</span>
+          <span class="tag hot">voice_message</span>
+          <span class="tag ai">Groq LLM</span>
+          <span class="tag">Whisper</span>
+        </div>
+      </div>
+      <div class="agent" style="--agent-color:var(--blue)" data-agent="2" onclick="openDetail(2)">
+        <div class="agent-num">A2</div>
+        <span class="agent-icon">📎</span>
+        <div class="agent-name">FileUploadAgent</div>
+        <div class="agent-role">OCR images/PDFs · transcribe audio<br>Embeds evidence into pgvector</div>
+        <div class="agent-tags">
+          <span class="tag hot">file_upload</span>
+          <span class="tag ai">Gemini Vision</span>
+          <span class="tag rag">embed→pgvector</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow: auto-chain -->
+    <div class="connector">
+      <div class="arrow-line"></div>
+      <div class="chain">⚡ auto-chains when profile complete</div>
+    </div>
+
+    <!-- RAG BLOCK -->
+    <div class="rag-block">
+      <div class="rag-title">Analysis Pipeline  ·  A3 → A4 → A5</div>
+
+      <div class="rag-agents">
+        <div class="agent" style="--agent-color:var(--yellow)" data-agent="3" onclick="openDetail(3)">
+          <div class="agent-num">A3</div>
+          <span class="agent-icon">🧠</span>
+          <div class="agent-name">CasePrepAgent</div>
+          <div class="agent-role">Key facts · strength score · strategy</div>
+          <div class="agent-tags">
+            <span class="tag ai">Groq LLM</span>
+            <span class="tag">JSON output</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="agent" style="--agent-color:var(--cyan)" data-agent="4" onclick="openDetail(4)">
+            <div class="agent-num">A4</div>
+            <span class="agent-icon">⚖️</span>
+            <div class="agent-name">SectionFinderAgent</div>
+            <div class="agent-role">RAG → applicable Indian law sections</div>
+            <div class="agent-tags">
+              <span class="tag rag">pgvector law_sections</span>
+              <span class="tag">Gemini embed</span>
+            </div>
+          </div>
+          <div class="agent" style="--agent-color:var(--cyan)" data-agent="5" onclick="openDetail(5)">
+            <div class="agent-num">A5</div>
+            <span class="agent-icon">📚</span>
+            <div class="agent-name">PrecedentAgent</div>
+            <div class="agent-role">RAG → similar Supreme Court judgments</div>
+            <div class="agent-tags">
+              <span class="tag rag">pgvector court_cases</span>
+              <span class="tag">rerank LLM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAG Pipeline Steps -->
+      <div class="h-flow">
+        <div class="rag-step">
+          <div class="rag-step-icon">🔤</div>
+          <div class="rag-step-label">EMBED</div>
+          <div class="rag-step-desc">Gemini<br>text-embedding<br>-004 · 768d</div>
+        </div>
+        <div class="h-arrow">
+          <div class="h-arrow-line"></div>
+          <div class="h-arrow-label">ANN</div>
+        </div>
+        <div class="rag-step">
+          <div class="rag-step-icon">🔍</div>
+          <div class="rag-step-label">RETRIEVE</div>
+          <div class="rag-step-desc">pgvector<br>cosine sim<br>threshold 0.48</div>
+        </div>
+        <div class="h-arrow">
+          <div class="h-arrow-line"></div>
+          <div class="h-arrow-label">top-10</div>
+        </div>
+        <div class="rag-step">
+          <div class="rag-step-icon">📊</div>
+          <div class="rag-step-label">RERANK</div>
+          <div class="rag-step-desc">Groq LLM<br>cross-encoder<br>0-10 score</div>
+        </div>
+        <div class="h-arrow">
+          <div class="h-arrow-line"></div>
+          <div class="h-arrow-label">top-5</div>
+        </div>
+        <div class="rag-step">
+          <div class="rag-step-icon">✨</div>
+          <div class="rag-step-label">GENERATE</div>
+          <div class="rag-step-desc">Groq LLM<br>grounded<br>synthesis</div>
+        </div>
+        <div class="h-arrow">
+          <div class="h-arrow-line" style="background:linear-gradient(to right,var(--border2),var(--yellow))"></div>
+          <div class="h-arrow-label">fallback</div>
+        </div>
+        <div class="rag-step" style="border-color:rgba(251,191,36,.2);background:rgba(251,191,36,.05)">
+          <div class="rag-step-icon">🌐</div>
+          <div class="rag-step-label" style="color:var(--yellow)">FALLBACK</div>
+          <div class="rag-step-desc">Gemini<br>Google Search<br>live results</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="connector">
+      <div class="arrow-line"></div>
+      <div class="connector-label">generate_document</div>
+    </div>
+
+    <!-- ROW 2: PDF + Comms -->
+    <div class="row">
+      <div class="row-label">OUTPUT</div>
+      <div class="agent" style="--agent-color:var(--green)" data-agent="6" onclick="openDetail(6)">
+        <div class="agent-num">A6</div>
+        <span class="agent-icon">📄</span>
+        <div class="agent-name">PDFGeneratorAgent</div>
+        <div class="agent-role">Formal legal complaint document<br>Court-ready · cites laws + precedents</div>
+        <div class="agent-tags">
+          <span class="tag hot">generate_document</span>
+          <span class="tag ai">Groq LLM</span>
+          <span class="tag">2800 tokens</span>
+        </div>
+      </div>
+      <div class="agent" style="--agent-color:var(--orange2)" data-agent="7" onclick="openDetail(7)">
+        <div class="agent-num">A7</div>
+        <span class="agent-icon">✉️</span>
+        <div class="agent-name">CommunicationAgent</div>
+        <div class="agent-role">Pre-litigation legal notices<br>Demand letters · 15-day deadline</div>
+        <div class="agent-tags">
+          <span class="tag">Legal Notice</span>
+          <span class="tag">Demand Letter</span>
+          <span class="tag ai">Groq LLM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="connector">
+      <div class="arrow-line"></div>
+      <div class="connector-label">connect_lawyer</div>
+    </div>
+
+    <!-- ROW 3: Lawyer -->
+    <div class="row">
+      <div class="row-label">CONNECT</div>
+      <div class="agent" style="--agent-color:var(--purple); max-width:520px; margin:0 auto" data-agent="8" onclick="openDetail(8)">
+        <div class="agent-num">A8</div>
+        <span class="agent-icon">👤</span>
+        <div class="agent-name">LawyerConnectorAgent</div>
+        <div class="agent-role">Score-matches NALSA lawyers by specialisation + language + location + rating<br>Assigns + drafts personalised briefing email</div>
+        <div class="agent-tags">
+          <span class="tag hot">connect_lawyer</span>
+          <span class="tag">+30 spec match</span>
+          <span class="tag">+20 city match</span>
+          <span class="tag">+15 language</span>
+          <span class="tag">+10 NALSA</span>
+          <span class="tag ai">Groq LLM</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /flow -->
+
+  <!-- SETUP STEPS -->
+  <div class="setup">
+    <div class="setup-title">⚙️ Integration Steps</div>
+    <div class="setup-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-name">Run schema in Supabase SQL Editor</div>
+          <div class="step-code">schema_v3.sql</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-name">Seed the RAG vector index (once)</div>
+          <div class="step-code">npx tsx scripts/seed-rag.ts</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-name">Place files in your Next.js project</div>
+          <div class="step-code">lib/orchestrator/index.ts &nbsp; lib/orchestrator/rag/pipeline.ts &nbsp; app/api/orchestrate/route.ts</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-name">Update frontend to use single endpoint</div>
+          <div class="step-code">POST /api/orchestrate  { task, userId, caseId, ...payload }</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-name">Set environment variables</div>
+          <div class="step-code">GROQ_API_KEY · GEMINI_API_KEY · NEXT_PUBLIC_SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+const AGENTS = {
+  1: {
+    num: "AGENT 01", icon: "🎤", color: "var(--orange)",
+    name: "IntakeAgent",
+    role: "Handles all text chat and voice messages. Reads the FULL conversation to extract structured case profile slots. Never repeats a question already answered. Asks only the next missing field.",
+    inputs: ["messages[] — full conversation history", "voice audio → Whisper transcription"],
+    outputs: ["response — next question or summary", "profile — caseType, incident, otherParty…", "readyToFile — true when all slots filled"],
+    code: `// Auto-triggered by:\nchat_message  { message, caseId, userId }\nvoice_message { audio: File, caseId, userId }\n\n// Auto-chains A3→A4→A5 when:\nprofile.readyToFile === true`,
+    tags: ["Groq LLaMA 3.3 70B", "Whisper large-v3", "slot-filling", "multilingual"]
+  },
+  2: {
+    num: "AGENT 02", icon: "📎", color: "var(--blue)",
+    name: "FileUploadAgent",
+    role: "Processes uploaded evidence files. Runs OCR on images/PDFs via Gemini Vision. Transcribes audio via Whisper. Generates 768-dim embedding and stores in pgvector. Re-runs analysis pipeline with enriched evidence.",
+    inputs: ["fileBuffer — raw file bytes", "fileName + mimeType", "evidenceId — Supabase row to update"],
+    outputs: ["ocrText — extracted text", "summary — 2-sentence description", "embedding → stored in evidence.embedding"],
+    code: `// Triggered by:\nfile_upload { file: File, caseId, userId }\n\n// After processing, auto-chains:\nif (ctx.caseType) → A3→A4→A5 pipeline`,
+    tags: ["Gemini 1.5 Flash (OCR)", "Whisper (audio)", "text-embedding-004", "pgvector"]
+  },
+  3: {
+    num: "AGENT 03", icon: "🧠", color: "var(--yellow)",
+    name: "CasePrepAgent",
+    role: "First stage of the analysis pipeline. Reads the complete case context (profile + evidence + laws + precedents) and produces structured key facts, a realistic strength percentage, and an actionable legal strategy.",
+    inputs: ["Full CaseContext including all prior agent outputs"],
+    outputs: ["keyFacts[] — 4 numbered provable facts", "strengthPercentage — 0-100 realistic score", "strategy — 3-4 sentence legal plan"],
+    code: `// Part of auto-chain:\nA3.run(ctx)\n  → A4.run(result.context)\n  → A5.run(result.context)\n  ctx.stage = 'analysis'`,
+    tags: ["Groq LLaMA 3.3 70B", "JSON output", "strength rubric", "auto-pipeline"]
+  },
+  4: {
+    num: "AGENT 04", icon: "⚖️", color: "var(--cyan)",
+    name: "SectionFinderAgent",
+    role: "Uses RAG to find applicable Indian law sections. Embeds the case query, searches pgvector law_sections table, reranks with LLM, then synthesises grounded answer. Falls back to Gemini Google Search if index is empty.",
+    inputs: ["Case query from: incident + desiredOutcome + caseType"],
+    outputs: ["applicableLaws[] — section, act, description, sourceUrl, relevanceScore"],
+    code: `// RAG pipeline:\nquery → embedText (Gemini 768d)\n     → pgvectorSearch (law_sections)\n     → rerankChunks (Groq LLM)\n     → generateGrounded (Groq LLM)\n// Fallback if 0 results:\n     → geminiLiveSearch (Google)`,
+    tags: ["pgvector ANN", "law_sections table", "25+ laws seeded", "Gemini fallback"]
+  },
+  5: {
+    num: "AGENT 05", icon: "📚", color: "var(--cyan)",
+    name: "PrecedentAgent",
+    role: "Uses RAG to find similar Indian court judgments. Same pipeline as A4 but searches court_cases table. Prioritises Supreme Court rulings. Reranks to surface most applicable precedents for the specific case facts.",
+    inputs: ["Case query from: incident + caseType + desiredOutcome + otherParty"],
+    outputs: ["similarCases[] — title, citation, court, year, outcome, summary, sourceUrl"],
+    code: `// RAG pipeline:\nquery → embedText (Gemini 768d)\n     → pgvectorSearch (court_cases)\n     → rerankChunks (Groq LLM)\n     → generateGrounded (Groq LLM)\n// 14 SC judgments seeded`,
+    tags: ["pgvector ANN", "court_cases table", "14 SC judgments", "SC priority"]
+  },
+  6: {
+    num: "AGENT 06", icon: "📄", color: "var(--green)",
+    name: "PDFGeneratorAgent",
+    role: "Generates a complete formal Indian legal complaint document using all prior agent outputs. Includes proper heading, jurisdiction, numbered facts, legal grounds with cited sections, precedents, prayer clause, and verification declaration.",
+    inputs: ["Full CaseContext: profile + keyFacts + applicableLaws + similarCases + evidenceSummary"],
+    outputs: ["draftDocument — complete court-ready complaint"],
+    code: `// Triggered by:\ngenerate_document { caseId, userId }\n\n// Auto-chains:\nA6.run(ctx) → A7.run(result.context)\n\n// Output saved to:\ncases.draft_document`,
+    tags: ["Groq LLaMA 3.3 70B", "2800 tokens", "court-ready format", "cites A4+A5"]
+  },
+  7: {
+    num: "AGENT 07", icon: "✉️", color: "var(--orange2)",
+    name: "CommunicationAgent",
+    role: "Drafts pre-litigation legal notices tailored to the case type. These are sent before going to court — often resolve disputes faster. Generates 1-2 appropriate notices with 15-day response deadline.",
+    inputs: ["CaseContext from A6 output"],
+    outputs: ["noticesDrafted[] — type, subject, body, recipient"],
+    code: `// Case-type notice mapping:\nConsumer → Demand Notice\nProperty → Legal Notice to Vacate\nCheque   → S.138 NI Act Notice\nFamily   → Maintenance Demand\nRTI      → First Appeal Notice`,
+    tags: ["Groq LLaMA 3.3 70B", "auto-chained from A6", "case-type routing", "15-day deadline"]
+  },
+  8: {
+    num: "AGENT 08", icon: "👤", color: "var(--purple)",
+    name: "LawyerConnectorAgent",
+    role: "Matches the case to the best available NALSA lawyer using a weighted scoring algorithm. Considers specialisation, city, state, language, and NALSA status. Assigns lawyer and drafts a personalised case briefing email.",
+    inputs: ["CaseContext + lawyers from Supabase"],
+    outputs: ["lawyerAssigned — lawyer ID", "lawyerName", "briefing — personalised email"],
+    code: `// Scoring weights:\n+30 specialisation match\n+20 city match\n+10 state match\n+15 language match\n+10 NALSA status\n ×10 star rating\n\n// Updates cases.lawyer_id`,
+    tags: ["Supabase query", "score algorithm", "Groq briefing", "NALSA match"]
+  }
+};
+
+function openDetail(num) {
+  const a = AGENTS[num];
+  if (!a) return;
+
+  document.querySelectorAll('.agent').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-agent="${num}"]`)?.classList.add('active');
+
+  const panel = document.getElementById('detailPanel');
+  const content = document.getElementById('detailContent');
+
+  content.innerHTML = `
+    <div class="dp-num" style="color:${a.color}">${a.num}</div>
+    <span class="dp-icon">${a.icon}</span>
+    <div class="dp-name" style="color:${a.color}">${a.name}</div>
+    <div class="dp-role">${a.role}</div>
+    <div class="dp-divider"></div>
+    <div class="dp-section-title">Inputs</div>
+    <ul class="dp-list" style="--agent-color:${a.color}">
+      ${a.inputs.map(i=>`<li>${i}</li>`).join('')}
+    </ul>
+    <div class="dp-divider"></div>
+    <div class="dp-section-title">Outputs</div>
+    <ul class="dp-list" style="--agent-color:${a.color}">
+      ${a.outputs.map(o=>`<li>${o}</li>`).join('')}
+    </ul>
+    <div class="dp-divider"></div>
+    <div class="dp-section-title">Trigger / Chain</div>
+    <pre class="dp-code">${a.code}</pre>
+    <div class="dp-divider"></div>
+    <div class="dp-section-title">Technologies</div>
+    <div class="agent-tags" style="margin-top:4px">
+      ${a.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
+    </div>
+  `;
+
+  panel.style.setProperty('--agent-color', a.color);
+  panel.classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.querySelectorAll('.agent').forEach(el => el.classList.remove('active'));
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('detailPanel');
+  if (panel.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('.agent'))
+    closeDetail();
+});
+
+// Keyboard
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// Animate in
+window.addEventListener('load', () => {
+  document.querySelectorAll('.agent, .stat, .rag-step').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 80 + i * 60);
+  });
+});
+</script>
+</body>
+</html>
