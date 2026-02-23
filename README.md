@@ -154,48 +154,7 @@ pramaan/
 
 ---
 
-## 🚀 Getting Started
 
-### Prerequisites
-- Node.js 18+
-- Supabase account
-- Groq API key (free at [console.groq.com](https://console.groq.com))
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/YOUR_USERNAME/pramaan.git
-cd pramaan
-```
-
-### 2. Install dependencies
-```bash
-npm install
-npm install tesseract.js pdf-parse
-npm install --save-dev @types/pdf-parse
-```
-
-### 3. Set up environment variables
-Create `.env.local` in the root:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GROQ_API_KEY=gsk_your_groq_key
-GEMINI_API_KEY=AIza_your_gemini_key
-```
-
-### 4. Set up Supabase database
-- Create a new Supabase project
-- Run `schema_v3.sql` in the Supabase SQL editor
-- Enable the `pgvector` extension in Supabase
-
-### 5. Run the development server
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
----
 
 ## 🌐 API Routes
 
@@ -207,17 +166,6 @@ Open [http://localhost:3000](http://localhost:3000)
 | `/api/orchestrate` | POST | Master agent orchestrator |
 | `/api/dashboard` | GET | User's cases, lawyers, notifications |
 
----
-
-## 🔑 Why Groq?
-
-PRAMAAN uses **Groq** as its primary AI provider because:
-- **Speed** — fastest token generation available (crucial for real-time chat)
-- **Free tier** — 14,400 requests/day, sufficient for demos and early users
-- **Quality** — `llama-3.3-70b` has strong knowledge of Indian law
-- **Reliability** — no rate limit issues during live hackathon demos
-
----
 
 ## 🏗️ Why This is Agentic AI
 
@@ -231,39 +179,4 @@ PRAMAAN qualifies as agentic AI because:
 
 ---
 
-## 📸 Screenshots
 
-> Add screenshots of your app here
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'feat: add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request to `dev`
-
----
-
-## 📄 License
-
-MIT License — free to use, modify, and distribute.
-
----
-
-## 🙏 Acknowledgements
-
-- [Groq](https://groq.com) — blazing fast LLM inference
-- [Supabase](https://supabase.com) — open source Firebase alternative
-- [Indian Kanoon](https://indiankanoon.org) — Indian legal database
-- [NALSA](https://nalsa.gov.in) — National Legal Services Authority
-- [Tesseract.js](https://tesseract.projectnaptha.com) — open source OCR
-
----
-
-<div align="center">
-  <strong>Built for India. Built for justice. Built for everyone.</strong><br/>
-  <em>PRAMAAN — because justice should never be a privilege.</em>
-</div>
