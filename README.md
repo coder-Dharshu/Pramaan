@@ -2,13 +2,6 @@
 
 > AI-powered free legal access for every Indian citizen
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
-[![Groq](https://img.shields.io/badge/Groq-llama--3.3--70b-orange)](https://groq.com)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)](https://supabase.com)
-[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-
----
-
 ## 🇮🇳 The Problem
 
 India has over **300 million citizens** who cannot access justice — not because their case is weak, but because legal help is expensive, complex, and inaccessible. A first-generation farmer in Karnataka or a daily-wage worker in Bihar has no idea how to file a consumer complaint, fight a property dispute, or challenge wrongful termination.
@@ -121,82 +114,7 @@ User Input
   - `searchLaws(query, caseType)` — finds applicable Indian law sections
   - `searchCases(query, caseType)` — finds real court judgments
   - `searchLegalQuery(query)` — answers specific legal questions
-
----
-
-## 📁 Project Structure
-
-```
-pramaan/
-├── public/
-│   ├── index.html          # Single-page frontend
-│   ├── script.js           # All frontend logic (chat, voice, camera, upload)
-│   ├── style.css           # Styling (dark/light theme)
-│   └── hero-image.png      # Hero section image
-│
-├── app/
-│   └── api/
-│       ├── chat/route.ts           # Agent 1 — intake conversation
-│       ├── upload-evidence/route.ts # Agent 2 — OCR + file upload
-│       ├── generate-case/route.ts   # Agents 3-7 — analysis + drafting
-│       ├── orchestrate/route.ts     # Master orchestrator
-│       └── dashboard/route.ts       # User dashboard data
-│
-├── lib/
-│   ├── ai/legal-agent.ts           # Core agent logic
-│   ├── mcp/legal-kb-mcp.ts         # MCP tools (laws + cases via Groq)
-│   └── rag/rag-pipeline.ts         # RAG — embed, retrieve, rerank, generate
-│
-├── schema_v3.sql           # Supabase database schema with pgvector
-├── .env.local              # API keys (never commit this)
-└── package.json
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Supabase account
-- Groq API key (free at [console.groq.com](https://console.groq.com))
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/YOUR_USERNAME/pramaan.git
-cd pramaan
-```
-
-### 2. Install dependencies
-```bash
-npm install
-npm install tesseract.js pdf-parse
-npm install --save-dev @types/pdf-parse
-```
-
-### 3. Set up environment variables
-Create `.env.local` in the root:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GROQ_API_KEY=gsk_your_groq_key
-GEMINI_API_KEY=AIza_your_gemini_key
-```
-
-### 4. Set up Supabase database
-- Create a new Supabase project
-- Run `schema_v3.sql` in the Supabase SQL editor
-- Enable the `pgvector` extension in Supabase
-
-### 5. Run the development server
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
+    
 ## 🌐 API Routes
 
 | Route | Method | Description |
@@ -231,39 +149,3 @@ PRAMAAN qualifies as agentic AI because:
 
 ---
 
-## 📸 Screenshots
-
-> Add screenshots of your app here
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'feat: add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request to `dev`
-
----
-
-## 📄 License
-
-MIT License — free to use, modify, and distribute.
-
----
-
-## 🙏 Acknowledgements
-
-- [Groq](https://groq.com) — blazing fast LLM inference
-- [Supabase](https://supabase.com) — open source Firebase alternative
-- [Indian Kanoon](https://indiankanoon.org) — Indian legal database
-- [NALSA](https://nalsa.gov.in) — National Legal Services Authority
-- [Tesseract.js](https://tesseract.projectnaptha.com) — open source OCR
-
----
-
-<div align="center">
-  <strong>Built for India. Built for justice. Built for everyone.</strong><br/>
-  <em>PRAMAAN — because justice should never be a privilege.</em>
-</div>
