@@ -108,8 +108,9 @@ User Input
 - **pgvector** — vector similarity search for RAG pipeline
 
 ### AI / RAG
-- **Gemini text-embedding-004** — 768-dim embeddings for law/case knowledge base
-- **RAG Pipeline** — embed → retrieve → rerank → generate
+- **Groq (llama-3.3-70b-versatile)** — sole AI provider across all 8 agents (chat, law search, case search, summarization, drafting, transcription). Temperature 0.1 for factual legal responses
+- **Groq Whisper (whisper-large-v3)** — voice transcription fallback via MediaRecorder
+- **RAG Pipeline** — embed → retrieve → rerank → generate, all powered by Groq
 - **MCP (Model Context Protocol)** — `legal-kb-mcp.ts` provides 3 tools to agents:
   - `searchLaws(query, caseType)` — finds applicable Indian law sections
   - `searchCases(query, caseType)` — finds real court judgments
